@@ -1,5 +1,5 @@
 # ==========================================
-# Author: Pham Gia Bao (Student ID: AUS15065)
+# Author: Nguyen Minh Duc (Student ID: AUS116107)
 # Project ID: TEC004/05
 # Description: SP1 - OOP Models and Class Hierarchy
 # ==========================================

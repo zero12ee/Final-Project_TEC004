@@ -1,99 +1,193 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
-const CourseCreator = ({ onSave }) => {
-    const [courseName, setCourseName] = useState('');
-    const [components, setComponents] = useState([
-        { id: 1, name: 'Attendance', weight: 10, max_points: 100 },
-        { id: 2, name: 'Assignment', weight: 10, max_points: 100 },
-        { id: 3, name: 'Midterm', weight: 20, max_points: 100 },
-        { id: 4, name: 'Final', weight: 40, max_points: 100 },
-        { id: 5, name: 'Participation', weight: 10, max_points: 100 },
-        { id: 6, name: 'Other', weight: 10, max_points: 100 },
-    ]);
+const defaultComponents = [
+  { id: 1, name: 'Attendance', weight: 10, maxPoints: 100 },
+  { id: 2, name: 'Assignment', weight: 10, maxPoints: 100 },
+  { id: 3, name: 'Midterm Assignment', weight: 20, maxPoints: 100 },
+  { id: 4, name: 'Final Assignment', weight: 40, maxPoints: 100 },
+];
 
-    // Calculate total weight dynamically
-    const totalWeight = components.reduce((sum, comp) => sum + Number(comp.weight), 0);
+function toTitleCase(text) {
+  return text
+    .trim()
+    .split(' ')
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+}
 
-    const updateComponent = (id, field, value) => {
-        setComponents(components.map(c => c.id === id ? { ...c, [field]: value } : c));
-    };
+const CourseCreator = ({ course, onSave, onCancel }) => {
+  const [courseName, setCourseName] = useState('');
+  const [components, setComponents] = useState(defaultComponents);
+  const [expectedTotal, setExpectedTotal] = useState(100);
+  const [passingThreshold, setPassingThreshold] = useState(60);
+  const [error, setError] = useState('');
 
-    const addComponent = () => {
-        setComponents([...components, { id: Date.now(), name: 'New Component', weight: 0, max_points: 100 }]);
-    };
+  useEffect(() => {
+    if (course) {
+      setCourseName(course.name || '');
+      setComponents(course.components || defaultComponents);
+      setExpectedTotal(course.expectedTotal ?? 100);
+      setPassingThreshold(course.passingThreshold ?? 60);
+      setError('');
+    } else {
+      setCourseName('');
+      setComponents(defaultComponents);
+      setExpectedTotal(100);
+      setPassingThreshold(60);
+      setError('');
+    }
+  }, [course]);
 
-    const removeComponent = (id) => {
-        setComponents(components.filter(c => c.id !== id));
-    };
+  const totalWeight = components.reduce((sum, comp) => sum + Number(comp.weight || 0), 0);
 
-    const handleSubmit = () => {
-        if (totalWeight !== 100) {
-            alert(`Error: Total percentage must be 100%. Currently: ${totalWeight}%`);
-            return;
-        }
-        if (!courseName) {
-            alert("Please enter a course name.");
-            return;
-        }
-        onSave({ courseName, components });
-    };
-
-    return (
-        <div className="course-creator">
-            <h2>Create New Course</h2>
-            <input 
-                placeholder="Course Name (e.g. Linear Algebra)" 
-                value={courseName}
-                onChange={(e) => setCourseName(e.target.value)}
-            />
-            
-            <div className="component-list">
-                {components.map((comp) => (
-                    <div key={comp.id} className="comp-row">
-                        <input value={comp.name} onChange={(e) => updateComponent(comp.id, 'name', e.target.value)} />
-                        <input type="number" value={comp.weight} onChange={(e) => updateComponent(comp.id, 'weight', e.target.value)} />
-                        <input type="number" value={comp.max_points} onChange={(e) => updateComponent(comp.id, 'max_points', e.target.value)} />
-                        <button onClick={() => removeComponent(comp.id)}>Delete</button>
-                    </div>
-                ))}
-            </div>
-
-            <button onClick={addComponent}>+ Add Component</button>
-            <p><strong>Total Weight: {totalWeight}%</strong></p>
-            <button onClick={handleSubmit} disabled={totalWeight !== 100}>Create Course</button>
-        </div>
+  const updateComponent = (id, field, value) => {
+    setComponents((prev) =>
+      prev.map((comp) =>
+        comp.id === id
+          ? {
+              ...comp,
+              [field]: field === 'name' ? value : Number(value),
+            }
+          : comp
+      )
     );
+  };
+
+  const addComponent = () => {
+    setComponents((prev) => [
+      ...prev,
+      { id: Date.now(), name: 'New Component', weight: 0, maxPoints: 100 },
+    ]);
+  };
+
+  const removeComponent = (id) => {
+    setComponents((prev) => prev.filter((comp) => comp.id !== id));
+  };
+
+  const handleSubmit = () => {
+    const trimmedName = courseName.trim();
+    if (!trimmedName) {
+      setError('Please enter a course name.');
+      return;
+    }
+    if (totalWeight !== 100) {
+      setError('Total percentage must be exactly 100%.');
+      return;
+    }
+    if (expectedTotal <= 0 || expectedTotal > 100) {
+      setError('Total performance expectation must be between 1 and 100.');
+      return;
+    }
+    if (passingThreshold < 0 || passingThreshold > 100) {
+      setError('Passing threshold must be between 0 and 100.');
+      return;
+    }
+
+    const savedCourse = {
+      id: course?.id,
+      name: toTitleCase(trimmedName),
+      components: components.map((comp) => ({
+        ...comp,
+        name: toTitleCase(comp.name || 'Untitled'),
+      })),
+      expectedTotal,
+      passingThreshold,
+    };
+    onSave(savedCourse);
+  };
+
+  return (
+    <div className="course-creator page-card">
+      <div className="page-header">
+        <div>
+          <h2>{course ? 'Edit Course' : 'Create Course'}</h2>
+          <p>Set up a course and adjust weights or max points.</p>
+        </div>
+        <button className="secondary" onClick={onCancel}>Back</button>
+      </div>
+
+      <div className="form-group">
+        <label>Course Name</label>
+        <input
+          type="text"
+          placeholder="Linear Algebra"
+          value={courseName}
+          onChange={(e) => setCourseName(e.target.value)}
+        />
+      </div>
+
+      <div className="form-group">
+        <label>Total Performance Expectation (%)</label>
+        <input
+          type="number"
+          min="1"
+          max="100"
+          value={expectedTotal}
+          onChange={(e) => setExpectedTotal(Number(e.target.value))}
+        />
+      </div>
+
+      <div className="form-group">
+        <label>Passing Threshold (%)</label>
+        <input
+          type="number"
+          min="0"
+          max="100"
+          value={passingThreshold}
+          onChange={(e) => setPassingThreshold(Number(e.target.value))}
+        />
+      </div>
+
+      <div className="component-table">
+        <div className="table-row header">
+          <div>Name</div>
+          <div>Weight %</div>
+          <div>Max Points</div>
+          <div>Action</div>
+        </div>
+        {components.map((comp) => (
+          <div key={comp.id} className="table-row">
+            <input
+              value={comp.name}
+              onChange={(e) => updateComponent(comp.id, 'name', e.target.value)}
+            />
+            <input
+              type="number"
+              min="0"
+              max="100"
+              value={comp.weight}
+              onChange={(e) => updateComponent(comp.id, 'weight', e.target.value)}
+            />
+            <input
+              type="number"
+              min="1"
+              value={comp.maxPoints}
+              onChange={(e) => updateComponent(comp.id, 'maxPoints', e.target.value)}
+            />
+            <button className="small" onClick={() => removeComponent(comp.id)}>
+              Delete
+            </button>
+          </div>
+        ))}
+      </div>
+
+      <div className="actions-row">
+        <button className="secondary" onClick={addComponent}>+ Add Component</button>
+        <div className="summary">
+          <div>Total Performance Expectation: {expectedTotal}%</div>
+          <div>Passing Threshold: {passingThreshold}%</div>
+          <div>Total Weight: {totalWeight}%</div>
+        </div>
+      </div>
+
+      {error && <div className="alert">{error}</div>}
+
+      <button className="primary" onClick={handleSubmit} disabled={totalWeight !== 100}>
+        {course ? 'Save Changes' : 'Create Course'}
+      </button>
+    </div>
+  );
 };
 
 export default CourseCreator;
-
-import axios from 'axios';
-
-export default function CourseView({ course }) {
-    const [inputs, setInputs] = useState({});
-    const [result, setResult] = useState(null);
-
-    const handleCalculate = async () => {
-        const payload = course.components.map(c => ({...c, input_points: inputs[c.id]}));
-        const res = await axios.post('http://localhost:5000/api/predict', { components: payload });
-        setResult(res.data);
-    };
-
-    return (
-        <div>
-            <h3>Course: {course.name}</h3>
-            {course.components.map(c => (
-                <div key={c.id}>
-                    <label>{c.name} ({c.weight}%)</label>
-                    <input type="number" onChange={(e) => setInputs({...inputs, [c.id]: e.target.value})} />
-                </div>
-            ))}
-            <button onClick={handleCalculate}>Calculate & Predict</button>
-            {result && (
-                <div style={{color: result.is_passing ? 'green' : 'red'}}>
-                    Total: {result.current_total}% | Suggested for missing: {result.suggested_score_needed}%
-                </div>
-            )}
-        </div>
-    );
-}
