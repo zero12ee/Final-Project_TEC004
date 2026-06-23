@@ -1,0 +1,42 @@
+[
+    {
+        "student_id": "S001",
+        "assessment_type": "midterm",
+        "score": "85"
+    },
+    {
+        "student_id": "S001",
+        "assessment_type": "attendance_rate",
+        "score": "90"
+    },
+    {
+        "student_id": "S001",
+        "assessment_type": "assignment_rate",
+        "score": "100"
+    },
+    {
+        "student_id": "S001",
+        "assessment_type": "final",
+        "score": "88"
+    },
+    {
+        "student_id": "S002",
+        "assessment_type": "midterm",
+        "score": "45"
+    },
+    {
+        "student_id": "S002",
+        "assessment_type": "attendance_rate",
+        "score": "60"
+    },
+    {
+        "student_id": "S002",
+        "assessment_type": "assignment_rate",
+        "score": "50"
+    },
+    {
+        "student_id": "S002",
+        "assessment_type": "final",
+        "score": "40"
+    }
+]

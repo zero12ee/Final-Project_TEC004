@@ -1,0 +1,9 @@
+student_id,assessment_type,score
+S001,midterm,85
+S001,attendance_rate,90
+S001,assignment_rate,100
+S001,final,88
+S002,midterm,45
+S002,attendance_rate,60
+S002,assignment_rate,50
+S002,final,40
