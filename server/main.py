@@ -1,5 +1,5 @@
 # ==========================================
-# Author: Pham Gia Bao (Student ID: AUS15065)
+# Author: Nguyen Luong Nhat (Student ID: AUS14988)
 # Project ID: TEC004/05
 # Description: Main entry point for the Application
 # ==========================================
