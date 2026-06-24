@@ -1,20 +1,92 @@
 import { useMemo, useState } from 'react';
 
+/**
+ * Utility function to calculate percentage
+ * @param {number} value - Numerator
+ * @param {number} total - Denominator
+ * @returns {string} Percentage with 2 decimal places
+ */
 const percentageOf = (value, total) => (total > 0 ? ((value / total) * 100).toFixed(2) : '0.00');
 
+/**
+ * CourseDetail Component
+ * 
+ * Displays course components with score input fields and grade calculation
+ * 
+ * Features:
+ * - Pre-populates component scores from CSV (if available)
+ * - Tracks student input for each component
+ * - Calculates weighted grades in real-time
+ * - Suggests required scores to meet passing threshold
+ * - Displays current total and passing status
+ * 
+ * Props:
+ * - user: Current user object (for display)
+ * - course: Course object with components array
+ * - onBack: Callback to return to dashboard
+ * 
+ * Component Score Calculation:
+ * - Input Score: Student's raw score for component
+ * - Normalized: (Input Score / Max Points) * Weight
+ * - Current Total: Sum of all normalized scores
+ * - Passing: Current Total >= Passing Threshold
+ */
 const CourseDetail = ({ user, course, onBack }) => {
+  // ================== STATE ==================
+  
+  /**
+   * Component score inputs
+   * Format: { [componentId]: scoreString }
+   * 
+   * Pre-populated with CSV scores if available
+   * Empty string for unfilled/null scores
+   */
   const [inputs, setInputs] = useState(() =>
-    course.components.reduce((acc, comp) => ({ ...acc, [comp.id]: '' }), {})
+    course.components.reduce((acc, comp) => {
+      // Pre-populate with score from CSV if available, otherwise empty
+      const value = comp.score !== null && comp.score !== undefined ? String(comp.score) : '';
+      return { ...acc, [comp.id]: value };
+    }, {})
   );
 
+  /**
+   * Calculation result from "Calculate" button
+   * Format: {
+   *   currentTotal: number,
+   *   target: number (passing threshold),
+   *   suggested: [{id, suggestedPoints, requiredPct}],
+   *   isPassing: boolean
+   * }
+   */
   const [result, setResult] = useState(null);
 
+  // ================== COMPUTED VALUES ==================
+  
+  // Calculate total weight from all components
   const totalWeight = course.components.reduce((sum, comp) => sum + Number(comp.weight), 0);
 
+  // ================== HANDLERS ==================
+  
+  /**
+   * Handle component score input change
+   * @param {number} id - Component ID
+   * @param {string} value - New score value
+   */
   const handleInputChange = (id, value) => {
     setInputs((prev) => ({ ...prev, [id]: value }));
   };
 
+  // ================== CALCULATED DATA ==================
+  
+  /**
+   * Component list with calculated scores
+   * Recalculates when course components or inputs change
+   * 
+   * For each component:
+   * - inputScore: Parsed student input (null if empty)
+   * - normalized: (inputScore / maxPoints) * weight
+   *   (represents contribution to final grade)
+   */
   const componentsWithScore = useMemo(() => {
     return course.components.map((comp) => {
       const inputScore = inputs[comp.id] !== '' ? Number(inputs[comp.id]) : null;
@@ -23,16 +95,36 @@ const CourseDetail = ({ user, course, onBack }) => {
     });
   }, [course.components, inputs]);
 
+  /**
+   * Current total grade
+   * Sum of all normalized component scores
+   */
   const currentTotal = componentsWithScore.reduce(
     (sum, comp) => sum + (comp.normalized || 0),
     0
   );
 
+  /**
+   * Weight remaining for empty components
+   * Used to determine if passing is still possible
+   */
   const missingWeight = componentsWithScore.reduce(
     (sum, comp) => sum + (!comp.inputScore && comp.inputScore !== 0 ? comp.weight : 0),
     0
   );
 
+  // ================== CALCULATE SUGGESTIONS ==================
+  
+  /**
+   * Calculate suggested scores needed to reach passing threshold
+   * 
+   * Algorithm:
+   * 1. Get passing threshold
+   * 2. Find empty components
+   * 3. Calculate how many points needed
+   * 4. Distribute needed points proportionally by weight
+   * 5. Suggest max(calculated, max_points) for each component
+   */
   const handleCalculate = () => {
     // Use the course's configured passing threshold, defaulting to 60 if not set.
     const target = course.passingThreshold ?? 60;

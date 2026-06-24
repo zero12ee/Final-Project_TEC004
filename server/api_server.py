@@ -13,6 +13,8 @@ from flask import Flask, request, jsonify
 # Import CORS middleware so the React client can call this API from a different origin.
 from flask_cors import CORS
 
+import json
+
 # Import password hashing utilities.
 # - generate_password_hash: safely hash plain text passwords before storage.
 # - check_password_hash: verify a plain text password against a stored hash.
@@ -20,6 +22,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 # Import the Database wrapper that manages SQLite storage.
 from database import Database
+from data_manager import DataManager
 
 # Initialize the Flask application.
 app = Flask(__name__)
@@ -31,6 +34,8 @@ CORS(app)
 # Initialize the database helper instance.
 # The Database class encapsulates user and course CRUD operations.
 db = Database()
+# Initialize CSV import/export helper.
+data_manager = DataManager()
 
 
 # -----------------------------
@@ -179,6 +184,92 @@ def courses():
         'passingThreshold': passing_threshold,
     }
     return jsonify({'status': 'created', 'course': course})
+
+
+@app.route('/api/import-subject-scores', methods=['POST'])
+def import_subject_scores():
+    csv_file = request.files.get('csv_file')
+    user_id = request.form.get('user_id')
+    expected_totals = request.form.get('expectedTotals')
+    default_expected_total = float(request.form.get('defaultExpectedTotal', 100.0))
+    output_path = request.form.get('output_path')
+
+    if not csv_file:
+        return jsonify({'error': 'Missing csv_file upload.'}), 400
+
+    try:
+        expected_totals = json.loads(expected_totals) if expected_totals else {}
+    except Exception:
+        expected_totals = {}
+
+    try:
+        result = data_manager.import_subject_scores_from_file(
+            csv_file,
+            expected_totals,
+            default_expected_total,
+        )
+    except Exception as e:
+        return jsonify({'error': f'Failed to import CSV: {e}'}), 500
+
+    created_courses = []
+    if user_id:
+        try:
+            user_id_int = int(user_id)
+            for subject in result.get('subjects', []):
+                subject_name = subject.get('subject') or 'Imported Course'
+                student_ids = subject.get('studentIds', [])
+                
+                # Create a display name with student ID information
+                if student_ids and len(student_ids) > 0:
+                    student_id_str = ', '.join(student_ids)
+                    display_name = f"{subject_name}\n(Student ID: {student_id_str})"
+                else:
+                    display_name = subject_name
+                
+                components = [
+                    {
+                        'name': comp.get('name', f'Component {index + 1}'),
+                        'weight': comp.get('weight', 0) or 0,
+                        'maxPoints': comp.get('maxPoints', 100) or 100,
+                        'score': comp.get('score'),
+                    }
+                    for index, comp in enumerate(subject.get('components', []))
+                ]
+
+                if not components:
+                    continue
+
+                course_id = db.create_course(
+                    user_id_int,
+                    display_name,  # Use display name with student ID
+                    components,
+                    subject.get('expectedTotal', default_expected_total),
+                    60,
+                )
+                # Fetch the course back from database to get component IDs
+                created_course = db.get_course(course_id, user_id_int)
+                if created_course:
+                    created_courses.append({
+                        'id': course_id,
+                        'name': display_name,
+                        'components': created_course.get('components', components),
+                        'expectedTotal': subject.get('expectedTotal', default_expected_total),
+                        'passingThreshold': 60,
+                        'studentIds': student_ids,  # Include student IDs in response
+                    })
+        except ValueError:
+            created_courses = []
+
+    if output_path:
+        try:
+            data_manager.export_to_json(result, output_path)
+        except Exception as e:
+            return jsonify({'error': f'Failed to export JSON: {e}'}), 500
+
+    response_body = {'parsed': result}
+    if created_courses:
+        response_body['createdCourses'] = created_courses
+    return jsonify(response_body)
 
 
 @app.route('/api/courses/<int:course_id>', methods=['PUT'])

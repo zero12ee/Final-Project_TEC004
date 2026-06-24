@@ -6,7 +6,7 @@
 
 import os
 import pandas as pd
-from database import DatabaseManager
+from database import Database
 from data_manager import DataManager
 from analytics import AcademicAnalytics
 
@@ -23,7 +23,7 @@ def main():
     print("=== Starting Project System ===")
     
     print("\n[1] Initializing SQLite Database...")
-    db = DatabaseManager("acadence.db")
+    db = Database("acadence.db")
     
     print("\n[2] Running Multi-threaded Data Import...")
     create_sample_data()
