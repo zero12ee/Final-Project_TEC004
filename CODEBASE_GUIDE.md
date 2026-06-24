@@ -1,6 +1,6 @@
 # Performance Tracker - Codebase Documentation
 
-## 📋 Overview
+##  Overview
 
 Performance Tracker is a full-stack web application for managing academic performance and tracking course grades. It allows students to:
 - Create courses and components
@@ -16,7 +16,7 @@ Performance Tracker is a full-stack web application for managing academic perfor
 
 ---
 
-## 📁 Project Structure
+##  Project Structure
 
 ```
 Performance Tracker/
@@ -63,7 +63,7 @@ Performance Tracker/
 
 ---
 
-## 🔧 Backend Architecture
+##  Backend Architecture
 
 ### Database Schema (SQLite)
 
@@ -159,7 +159,7 @@ AUS15065,Advanced Computer Programming,Attendance,10,10,9
 
 ---
 
-## ⚛️ Frontend Architecture
+##  Frontend Architecture
 
 ### Component Hierarchy
 
@@ -246,7 +246,7 @@ Form to manually create courses and components (without CSV)
 
 ---
 
-## 🔄 Data Flow
+##  Data Flow
 
 ### CSV Import Flow
 
@@ -310,7 +310,7 @@ Display Suggestions ✓
 
 ---
 
-## 🔐 Security Features
+##  Security Features
 
 ### Password Security
 - **PBKDF2-SHA256:** Industry-standard hashing
@@ -329,7 +329,7 @@ Display Suggestions ✓
 
 ---
 
-## 📊 Important Code Concepts
+##  Important Code Concepts
 
 ### CSV Encoding Detection (data_manager.py)
 ```python
@@ -379,7 +379,7 @@ Initializes input fields with CSV scores, shows empty for null values (not 0)
 
 ---
 
-## ⚠️ Common Issues & Solutions
+##  Common Issues & Solutions
 
 ### Issue: All Components Show Same Score (e.g., "82")
 **Cause:** Components missing database IDs
@@ -403,7 +403,7 @@ Initializes input fields with CSV scores, shows empty for null values (not 0)
 
 ---
 
-## 🚀 Running the Application
+##  Running the Application
 
 ### Backend (Flask)
 ```bash
@@ -427,7 +427,7 @@ SQLite automatically initializes on first run
 
 ---
 
-## 📝 Development Notes
+##  Development Notes
 
 ### Adding New CSV Columns
 Edit `data_manager.py` in `import_subject_scores_from_file()`:
@@ -446,7 +446,7 @@ Edit `database.py` `_initialize_tables()` and ensure migration logic
 
 ---
 
-## 📚 Key Libraries & APIs
+##  Key Libraries & APIs
 
 **Backend:**
 - `Flask` - Web framework
@@ -462,7 +462,7 @@ Edit `database.py` `_initialize_tables()` and ensure migration logic
 
 ---
 
-## ✅ Testing
+##  Testing
 
 Test files organized in `tests/` folder:
 - `test_csv_parse.py` - CSV parsing tests
@@ -477,7 +477,7 @@ python test_scores_stored.py
 
 ---
 
-## 📞 Support
+##  Support
 
 For code questions, refer to:
 1. **This file** - Architecture overview
